@@ -18,7 +18,7 @@ pub mod man_amm {
     use super::*;
 
     pub fn initialize_pool(ctx: Context<InitializePool>, fee_bps: u16) -> Result<()> {
-        initialize::initialize_pool(ctx, fee_bps)
+        instructions::initialize::handle_initialize_pool(ctx, fee_bps)
     }
 
     pub fn add_liquidity(
@@ -27,7 +27,7 @@ pub mod man_amm {
         max_b: u64,
         min_lp: u64,
     ) -> Result<()> {
-        instructions::add_liquidity::add_liquidity(ctx, max_a, max_b, min_lp)
+        instructions::add_liquidity::handle_add_liquidity(ctx, max_a, max_b, min_lp)
     }
 
     pub fn remove_liquidity(
@@ -36,10 +36,10 @@ pub mod man_amm {
         min_a: u64,
         min_b: u64,
     ) -> Result<()> {
-        instructions::remove_liquidity::remove_liquidity(ctx, lp_amount, min_a, min_b)
+        instructions::remove_liquidity::handle_remove_liquidity(ctx, lp_amount, min_a, min_b)
     }
 
     pub fn swap(ctx: Context<Swap>, amount_in: u64, min_out: u64, a_to_b: bool) -> Result<()> {
-        instructions::swap::swap(ctx, amount_in, min_out, a_to_b)
+        instructions::swap::handle_swap(ctx, amount_in, min_out, a_to_b)
     }
 }

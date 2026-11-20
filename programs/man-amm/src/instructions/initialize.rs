@@ -2,7 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use crate::{
-    error::AmmError, Pool, AUTHORITY_SEED, LP_MINT_SEED, MAX_FEE_BPS, POOL_SEED, VAULT_SEED,
+    error::AmmError, Pool, AUTHORITY_SEED, LOCKED_LP_SEED, LP_MINT_SEED, MAX_FEE_BPS, POOL_SEED,
+    VAULT_SEED,
 };
 
 #[derive(Accounts)]
@@ -60,11 +61,21 @@ pub struct InitializePool<'info> {
     )]
     pub lp_mint: Account<'info, Mint>,
 
+    #[account(
+        init,
+        payer = payer,
+        seeds = [LOCKED_LP_SEED, pool.key().as_ref()],
+        bump,
+        token::mint = lp_mint,
+        token::authority = pool_authority,
+    )]
+    pub locked_lp: Account<'info, TokenAccount>,
+
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
 }
 
-pub fn initialize_pool(ctx: Context<InitializePool>, fee_bps: u16) -> Result<()> {
+pub fn handle_initialize_pool(ctx: Context<InitializePool>, fee_bps: u16) -> Result<()> {
     require!(
         ctx.accounts.mint_a.key() < ctx.accounts.mint_b.key(),
         AmmError::MintsNotSorted
