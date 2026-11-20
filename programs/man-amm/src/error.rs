@@ -14,4 +14,8 @@ pub enum AmmError {
     EmptyPool,
     #[msg("Output amount would be zero")]
     ZeroOutput,
+    #[msg("Amount must be greater than zero")]
+    ZeroAmount,
+    #[msg("Slippage tolerance exceeded")]
+    SlippageExceeded,
 }
