@@ -1,6 +1,6 @@
 use crate::{
     amounts_for_deposit, error::AmmError, initial_lp, lp_for_deposit, Pool, AUTHORITY_SEED,
-    POOL_SEED,
+    LOCKED_LP_SEED, MINIMUM_LIQUIDITY, POOL_SEED,
 };
 use anchor_lang::prelude::*;
 use anchor_spl::token::{mint_to, transfer, Mint, MintTo, Token, TokenAccount, Transfer};
@@ -17,7 +17,7 @@ pub struct AddLiquidity<'info> {
 		has_one = vault_b,
 		has_one = lp_mint,
 	)]
-    pub pool: Account<'info, Pool>,
+    pub pool: Box<Account<'info, Pool>>,
 
     /// CHECK: PDA derived from the pool key via seeds below. It holds no data
     /// and only acts as the signing authority for the vaults and LP mint.
@@ -28,52 +28,61 @@ pub struct AddLiquidity<'info> {
     pub pool_authority: UncheckedAccount<'info>,
 
     #[account(mut)]
-    pub vault_a: Account<'info, TokenAccount>,
+    pub vault_a: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
-    pub vault_b: Account<'info, TokenAccount>,
+    pub vault_b: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
-    pub lp_mint: Account<'info, Mint>,
+    pub lp_mint: Box<Account<'info, Mint>>,
+
+    #[account(
+		mut,
+		seeds = [LOCKED_LP_SEED, pool.key().as_ref()],
+		bump,
+		token::mint = lp_mint,
+		token::authority = pool_authority,
+	)]
+    pub locked_lp: Box<Account<'info, TokenAccount>>,
 
     #[account(
 		mut,
 		token::mint = pool.mint_a,
 		token::authority = user,
 	)]
-    pub user_token_a: Account<'info, TokenAccount>,
+    pub user_token_a: Box<Account<'info, TokenAccount>>,
 
     #[account(
 		mut,
 		token::mint = pool.mint_b,
 		token::authority = user,
 	)]
-    pub user_token_b: Account<'info, TokenAccount>,
+    pub user_token_b: Box<Account<'info, TokenAccount>>,
 
     #[account(
 		mut,
 		token::mint = lp_mint,
 		token::authority = user,
 	)]
-    pub user_lp: Account<'info, TokenAccount>,
+    pub user_lp: Box<Account<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
 }
 
-pub fn add_liquidity(
+pub fn handle_add_liquidity(
     ctx: Context<AddLiquidity>,
     max_a: u64,
     max_b: u64,
     min_lp: u64,
 ) -> Result<()> {
-    require!(max_a > 0, AmmError::MathOverflow);
-    require!(max_b > 0, AmmError::MathOverflow);
+    require!(max_a > 0 && max_b > 0, AmmError::ZeroAmount);
 
     let reserve_a = ctx.accounts.vault_a.amount;
     let reserve_b = ctx.accounts.vault_b.amount;
     let lp_supply = ctx.accounts.lp_mint.supply;
+    let first_deposit = lp_supply == 0;
 
-    let (amount_a, amount_b, lp_to_mint) = if lp_supply == 0 {
+    let (amount_a, amount_b, lp_to_mint) = if first_deposit {
         let lp = initial_lp(max_a, max_b)?;
         (max_a, max_b, lp)
     } else {
@@ -130,6 +139,22 @@ pub fn add_liquidity(
         ),
         lp_to_mint,
     )?;
+
+    // 3. lock the minimum liquidity forever on the first deposit
+    if first_deposit {
+        mint_to(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.key(),
+                MintTo {
+                    mint: ctx.accounts.lp_mint.to_account_info(),
+                    to: ctx.accounts.locked_lp.to_account_info(),
+                    authority: ctx.accounts.pool_authority.to_account_info(),
+                },
+                signer_seeds,
+            ),
+            MINIMUM_LIQUIDITY,
+        )?;
+    }
 
     Ok(())
 }

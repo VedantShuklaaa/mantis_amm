@@ -47,7 +47,7 @@ pub struct Swap<'info> {
 	pub token_program: Program<'info, Token>,
 }
 
-pub fn swap(ctx: Context<Swap>, amount_in: u64, min_out: u64, a_to_b: bool) -> Result<()> {
+pub fn handle_swap(ctx: Context<Swap>, amount_in: u64, min_out: u64, a_to_b: bool) -> Result<()> {
 	require!(amount_in > 0, AmmError::ZeroAmount);
 
 	let (vault_in, vault_out, user_in, user_out) = if a_to_b {

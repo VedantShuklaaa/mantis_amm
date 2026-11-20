@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{
-    burn, transfer, Burn, Mint, Token, TokenAccount, Transfer, TransferChecked,
-};
+use anchor_spl::token::{burn, transfer, Burn, Mint, Token, TokenAccount, Transfer};
 
 use crate::{error::AmmError, withdraw_amounts, Pool, AUTHORITY_SEED, POOL_SEED};
 
@@ -17,7 +15,7 @@ pub struct RemoveLiquidity<'info> {
 		has_one = vault_b,
 		has_one = lp_mint,
 	)]
-    pub pool: Account<'info, Pool>,
+    pub pool: Box<Account<'info, Pool>>,
 
     /// CHECK: PDA derived from the pool key via seeds below. It holds no data
     /// and only acts as the signing authority for the vaults and LP mint.
@@ -28,39 +26,39 @@ pub struct RemoveLiquidity<'info> {
     pub pool_authority: UncheckedAccount<'info>,
 
     #[account(mut)]
-    pub vault_a: Account<'info, TokenAccount>,
+    pub vault_a: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
-    pub vault_b: Account<'info, TokenAccount>,
+    pub vault_b: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
-    pub lp_mint: Account<'info, Mint>,
+    pub lp_mint: Box<Account<'info, Mint>>,
 
     #[account(
 		mut,
 		token::mint = pool.mint_a,
 		token::authority = user,
 	)]
-    pub user_token_a: Account<'info, TokenAccount>,
+    pub user_token_a: Box<Account<'info, TokenAccount>>,
 
     #[account(
 		mut,
 		token::mint = pool.mint_b,
 		token::authority = user,
 	)]
-    pub user_token_b: Account<'info, TokenAccount>,
+    pub user_token_b: Box<Account<'info, TokenAccount>>,
 
     #[account(
 		mut,
 		token::mint = lp_mint,
 		token::authority = user,
 	)]
-    pub user_lp: Account<'info, TokenAccount>,
+    pub user_lp: Box<Account<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
 }
 
-pub fn remove_liquidity(
+pub fn handle_remove_liquidity(
     ctx: Context<RemoveLiquidity>,
     lp_amount: u64,
     min_a: u64,
@@ -79,7 +77,7 @@ pub fn remove_liquidity(
 
     burn(
         CpiContext::new(
-            ctx.accounts.pool_authority.key(),
+            ctx.accounts.token_program.key(),
             Burn {
                 mint: ctx.accounts.lp_mint.to_account_info(),
                 from: ctx.accounts.user_lp.to_account_info(),
