@@ -38,4 +38,8 @@ pub mod man_amm {
     ) -> Result<()> {
         instructions::remove_liquidity::remove_liquidity(ctx, lp_amount, min_a, min_b)
     }
+
+    pub fn swap(ctx: Context<Swap>, amount_in: u64, min_out: u64, a_to_b: bool) -> Result<()> {
+        instructions::swap::swap(ctx, amount_in, min_out, a_to_b)
+    }
 }
