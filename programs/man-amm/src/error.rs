@@ -8,4 +8,10 @@ pub enum AmmError {
     FeeTooHigh,
     #[msg("Math overflow")]
     MathOverflow,
+    #[msg("Initial deposit too small (must exceed minimum liquidity)")]
+    InsufficientLiquidity,
+    #[msg("Pool has no liquidity")]
+    EmptyPool,
+    #[msg("Output amount would be zero")]
+    ZeroOutput,
 }

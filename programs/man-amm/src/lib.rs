@@ -2,11 +2,13 @@ pub mod constants;
 pub mod error;
 pub mod instructions;
 pub mod state;
+pub mod math;
 
 use anchor_lang::prelude::*;
 
 pub use constants::*;
 pub use instructions::*;
+pub use math::*;
 pub use state::*;
 
 declare_id!("DwMeAF9UFscahiqeYKr1CmKhEwdp9TBxihGbcK5YqJFm");
