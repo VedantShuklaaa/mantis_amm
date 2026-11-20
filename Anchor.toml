@@ -9,7 +9,7 @@ skip-lint = false
 man_amm = "DwMeAF9UFscahiqeYKr1CmKhEwdp9TBxihGbcK5YqJFm"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
